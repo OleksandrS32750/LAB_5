@@ -22,6 +22,20 @@ public class ReservationsController : ControllerBase
             return BadRequest(error);
         }
 
+        // if for example reservation between startTime and endTime already exists for provided room,we want to prevent createing another reservatino for this room (only if it is not cancelled)
+        var hasOverlap = DataStore.Reservations.Any(r =>
+            r.RoomId == reservation.RoomId &&
+            r.Date == reservation.Date &&
+            r.Status != "cancelled" &&
+            ((reservation.StartTime >= r.StartTime && reservation.StartTime < r.EndTime) ||
+             (reservation.EndTime > r.StartTime && reservation.EndTime <= r.EndTime) ||
+             (reservation.StartTime <= r.StartTime && reservation.EndTime >= r.EndTime)));
+
+        if (hasOverlap)
+        {
+            return Conflict("Reservation overlaps with an existing reservation for this room on the same date");
+        }
+
         reservation.Id = DataStore.NextReservationId;
         DataStore.Reservations.Add(reservation);
 
@@ -39,5 +53,20 @@ public class ReservationsController : ControllerBase
         }
 
         return Ok(reservation);
+    }
+
+    [HttpDelete("{id}")]
+    public IActionResult DeleteReservation(int id)
+    {
+        var reservation = DataStore.Reservations.FirstOrDefault(r => r.Id == id);
+
+        if (reservation == null)
+        {
+            return NotFound("Reservation with ID '" + id + "' does not exist");
+        }
+
+        DataStore.Reservations.Remove(reservation);
+
+        return NoContent();
     }
 }
