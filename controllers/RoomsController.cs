@@ -75,4 +75,30 @@ public class RoomsController : ControllerBase
 
         return CreatedAtAction(nameof(GetRoom), new { id = newRoom.Id }, newRoom);
     }
+
+    [HttpPut("{id}")]
+    public IActionResult UpdateRoom(int id, [FromBody] Room updatedRoom)
+    {
+        var room = DataStore.Rooms.FirstOrDefault(r => r.Id == id);
+
+        if (room == null)
+        {
+            return NotFound("Room with ID '" + id + "' does not exist");
+        }
+
+        var error = RoomValidator.Validate(updatedRoom);
+        if (error != null)
+        {
+            return BadRequest(error);
+        }
+
+        room.Name = updatedRoom.Name;
+        room.BuildingCode = updatedRoom.BuildingCode;
+        room.Floor = updatedRoom.Floor;
+        room.Capacity = updatedRoom.Capacity;
+        room.HasProjector = updatedRoom.HasProjector;
+        room.IsActive = updatedRoom.IsActive;
+
+        return Ok(room);
+    }
 }
